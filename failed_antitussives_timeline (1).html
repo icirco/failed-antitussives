@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Failed Antitussives Timeline</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+        h1 { text-align: center; color: #2d3748; margin-bottom: 10px; font-size: 2.5em; }
+        .subtitle { text-align: center; color: #718096; margin-bottom: 40px; font-size: 1.1em; }
+        .timeline-container { position: relative; margin: 60px 0; padding: 0 20px; }
+        .timeline-line {
+            position: absolute; top: 50%; left: 20px; right: 20px; height: 4px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px; transform: translateY(-50%);
+        }
+        .timeline-items {
+            position: relative; display: flex; justify-content: space-between;
+            align-items: center; min-height: 250px;
+        }
+        .year-group {
+            position: relative; display: flex; flex-direction: column;
+            align-items: center; cursor: pointer;
+        }
+        .year-label {
+            position: absolute; bottom: -50px; font-weight: 600;
+            color: #4a5568; font-size: 0.9em; white-space: nowrap;
+        }
+        .timeline-marker {
+            width: 20px; height: 20px; background: white; border: 4px solid #667eea;
+            border-radius: 50%; cursor: pointer; transition: all 0.3s ease;
+            z-index: 10; position: relative;
+        }
+        .timeline-marker:hover {
+            transform: scale(1.5);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+        .timeline-marker.multiple {
+            width: 24px; height: 24px; border-width: 5px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .item-count {
+            position: absolute; top: -30px; background: #667eea; color: white;
+            border-radius: 12px; padding: 4px 10px; font-size: 0.8em;
+            font-weight: 600; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        .tooltip {
+            position: fixed; background: white; border: 2px solid #667eea;
+            border-radius: 12px; padding: 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            z-index: 1000; max-width: 400px; pointer-events: none;
+            opacity: 0; transition: opacity 0.2s ease;
+        }
+        .tooltip.show { opacity: 1; }
+        .tooltip h3 {
+            color: #667eea; margin-bottom: 12px; font-size: 1.3em;
+            border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;
+        }
+        .tooltip-row { margin: 10px 0; display: flex; gap: 8px; }
+        .tooltip-label { font-weight: 600; color: #4a5568; min-width: 110px; }
+        .tooltip-value { color: #2d3748; flex: 1; }
+        .mechanism-badge {
+            display: inline-block;
+            color: white; padding: 4px 12px; border-radius: 20px;
+            font-size: 0.85em; font-weight: 600;
+        }
+        .stats {
+            display: flex; justify-content: space-around; margin-top: 60px;
+            padding: 30px; background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 12px;
+        }
+        .stat-item { text-align: center; }
+        .stat-number { font-size: 2.5em; font-weight: 700; color: #667eea; display: block; }
+        .stat-label { color: #718096; margin-top: 8px; font-size: 0.95em; }
+        .legend {
+            margin-top: 40px; padding: 20px; background: #f7fafc;
+            border-radius: 12px; display: flex; flex-wrap: wrap;
+            gap: 20px; justify-content: center;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-marker { width: 16px; height: 16px; border-radius: 50%; }
+        @media (max-width: 768px) {
+            .container { padding: 20px; }
+            h1 { font-size: 1.8em; }
+            .timeline-items { flex-wrap: wrap; gap: 20px; }
+            .year-label { font-size: 0.8em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Failed Antitussive Candidates Timeline</h1>
+        <p class="subtitle">Clinical Development Terminations (2009-2024)</p>
+        <div class="timeline-container">
+            <div class="timeline-line"></div>
+            <div class="timeline-items" id="timeline"></div>
+        </div>
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-number" id="totalCount">15</span>
+                <span class="stat-label">Total Terminations</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="yearSpan">15</span>
+                <span class="stat-label">Year Span</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="mechanismCount">8</span>
+                <span class="stat-label">Mechanisms Tested</span>
+            </div>
+        </div>
+        <div class="legend" id="legend"></div>
+    </div>
+    <div class="tooltip" id="tooltip"></div>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const data = [
+            {"Candidate": "Aprepitant", "Sponsor": "Multiple", "Indication": "Cancer cough", "Reason": "Insufficient efficacy", "Year terminated": 2009, "Mechanism_Tag": "NK1"},
+            {"Candidate": "Memantine", "Sponsor": "Academic", "Indication": "RCC", "Reason": "Not viable therapy", "Year terminated": 2010, "Mechanism_Tag": "NMDA"},
+            {"Candidate": "AZD1386", "Sponsor": "AstraZeneca", "Indication": "Pain/cough interest", "Reason": "GI AEs and limited efficacy", "Year terminated": 2011, "Mechanism_Tag": "TRPV1"},
+            {"Candidate": "GSK2339345", "Sponsor": "GSK", "Indication": "Pain/cough interest", "Reason": "Did not meet endpoints", "Year terminated": 2013, "Mechanism_Tag": "NaV1.7"},
+            {"Candidate": "SB-705498", "Sponsor": "GSK", "Indication": "RCC", "Reason": "No reduction in cough frequency", "Year terminated": 2014, "Mechanism_Tag": "TRPV1"},
+            {"Candidate": "GRC 17536", "Sponsor": "Glenmark", "Indication": "Chronic cough", "Reason": "Ineffective", "Year terminated": 2014, "Mechanism_Tag": "TRPA1"},
+            {"Candidate": "XEN-D0501", "Sponsor": "Xention", "Indication": "RCC", "Reason": "No improvement in awake cough", "Year terminated": 2015, "Mechanism_Tag": "TRPV1"},
+            {"Candidate": "Funapide (CNV1014802)", "Sponsor": "Convergence", "Indication": "Pain/cough interest", "Reason": "Insufficient efficacy", "Year terminated": 2016, "Mechanism_Tag": "NaV1.7"},
+            {"Candidate": "Bradanicline", "Sponsor": "Attenua", "Indication": "RCC", "Reason": "No improvement", "Year terminated": 2018, "Mechanism_Tag": "alpha7"},
+            {"Candidate": "Serlopitant", "Sponsor": "Menlo", "Indication": "RCC", "Reason": "No benefit vs placebo", "Year terminated": 2019, "Mechanism_Tag": "NK1"},
+            {"Candidate": "GSK2798745", "Sponsor": "GSK", "Indication": "RCC", "Reason": "No meaningful reduction", "Year terminated": 2020, "Mechanism_Tag": "TRPV4"},
+            {"Candidate": "Eliapixant", "Sponsor": "Bayer", "Indication": "RCC", "Reason": "Benefit-risk concerns", "Year terminated": 2022, "Mechanism_Tag": "P2X3"},
+            {"Candidate": "Gefapixant", "Sponsor": "Merck", "Indication": "RCC/UCC", "Reason": "FDA CRLs, insufficient evidence", "Year terminated": 2023, "Mechanism_Tag": "P2X3"},
+            {"Candidate": "Sivopixant", "Sponsor": "Shionogi", "Indication": "RCC/UCC", "Reason": "No significant reduction vs placebo", "Year terminated": 2023, "Mechanism_Tag": "P2X3"},
+            {"Candidate": "RG6341", "Sponsor": "Roche", "Indication": "Chronic cough", "Reason": "Pipeline removal", "Year terminated": 2024, "Mechanism_Tag": "TRPA1"}
+        ];
+        const groupedByYear = {};
+        data.forEach(item => {
+            const year = item['Year terminated'];
+            if (!groupedByYear[year]) { groupedByYear[year] = []; }
+            groupedByYear[year].push(item);
+        });
+        // Create array with ALL years from 2009 to 2024
+        const startYear = 2009;
+        const endYear = 2024;
+        const years = [];
+        for (let year = startYear; year <= endYear; year++) {
+            years.push(year);
+        }
+        const mechanisms = [...new Set(data.map(item => item.Mechanism_Tag))];
+        const mechanismColors = {
+            'NK1': '#667eea', 'NMDA': '#764ba2', 'TRPV1': '#f093fb',
+            'NaV1.7': '#4facfe', 'TRPA1': '#43e97b', 'TRPV4': '#fa709a',
+            'alpha7': '#30cfd0', 'P2X3': '#ff6b6b'
+        };
+        const timeline = document.getElementById('timeline');
+        const tooltip = document.getElementById('tooltip');
+        years.forEach(year => {
+            const items = groupedByYear[year];
+            const yearGroup = document.createElement('div');
+            yearGroup.className = 'year-group';
+            
+            // Only add marker if there's data for this year
+            if (items && items.length > 0) {
+                // Create a container for markers
+                const markerContainer = document.createElement('div');
+                markerContainer.style.display = 'flex';
+                markerContainer.style.flexDirection = 'column';
+                markerContainer.style.gap = '6px';
+                markerContainer.style.alignItems = 'center';
+                
+                // Create individual colored markers for each item
+                items.forEach((item) => {
+                    const marker = document.createElement('div');
+                    marker.className = 'timeline-marker';
+                    
+                    // Color the marker based on mechanism
+                    const color = mechanismColors[item.Mechanism_Tag] || '#667eea';
+                    marker.style.borderColor = color;
+                    marker.style.background = 'white';
+                    
+                    marker.addEventListener('mouseenter', (e) => showTooltip(e, [item]));
+                    marker.addEventListener('mousemove', (e) => moveTooltip(e));
+                    marker.addEventListener('mouseleave', hideTooltip);
+                    
+                    markerContainer.appendChild(marker);
+                });
+                
+                yearGroup.appendChild(markerContainer);
+            } else {
+                // For years without data, add an invisible spacer
+                const spacer = document.createElement('div');
+                spacer.style.width = '20px';
+                spacer.style.height = '20px';
+                yearGroup.appendChild(spacer);
+            }
+
+            const yearLabel = document.createElement('div');
+            yearLabel.className = 'year-label';
+            yearLabel.textContent = year;
+            yearGroup.appendChild(yearLabel);
+            timeline.appendChild(yearGroup);
+        });
+        function showTooltip(e, items) {
+            let content = '';
+            items.forEach((item, index) => {
+                if (index > 0) { content += '<hr style="margin: 15px 0; border: none; border-top: 1px solid #e2e8f0;">'; }
+                
+                // Get the color for this mechanism
+                const color = mechanismColors[item.Mechanism_Tag] || '#667eea';
+                
+                content += `<h3>${item.Candidate}</h3>
+                    <div class="tooltip-row"><span class="tooltip-label">Sponsor:</span><span class="tooltip-value">${item.Sponsor}</span></div>
+                    <div class="tooltip-row"><span class="tooltip-label">Indication:</span><span class="tooltip-value">${item.Indication}</span></div>
+                    <div class="tooltip-row"><span class="tooltip-label">Reason:</span><span class="tooltip-value">${item.Reason}</span></div>
+                    <div class="tooltip-row"><span class="tooltip-label">Year:</span><span class="tooltip-value">${item['Year terminated']}</span></div>
+                    <div class="tooltip-row"><span class="tooltip-label">Mechanism:</span><span class="tooltip-value"><span class="mechanism-badge" style="background: ${color};">${item.Mechanism_Tag}</span></span></div>`;
+            });
+            tooltip.innerHTML = content;
+            tooltip.classList.add('show');
+            moveTooltip(e);
+        }
+        function moveTooltip(e) {
+            const tooltipRect = tooltip.getBoundingClientRect();
+            const margin = 20;
+            let left = e.clientX + margin;
+            let top = e.clientY + margin;
+            if (left + tooltipRect.width > window.innerWidth) { left = e.clientX - tooltipRect.width - margin; }
+            if (top + tooltipRect.height > window.innerHeight) { top = e.clientY - tooltipRect.height - margin; }
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+        }
+        function hideTooltip() { tooltip.classList.remove('show'); }
+        const legend = document.getElementById('legend');
+        mechanisms.sort().forEach(mechanism => {
+            const item = document.createElement('div');
+            item.className = 'legend-item';
+            const marker = document.createElement('div');
+            marker.className = 'legend-marker';
+            const color = mechanismColors[mechanism] || '#667eea';
+            marker.style.background = 'white';
+            marker.style.border = `3px solid ${color}`;
+            const label = document.createElement('span');
+            label.textContent = mechanism;
+            label.style.color = '#4a5568';
+            label.style.fontWeight = '500';
+            item.appendChild(marker);
+            item.appendChild(label);
+            legend.appendChild(item);
+        });
+        document.getElementById('totalCount').textContent = data.length;
+        const spanYears = years[years.length - 1] - years[0];
+        document.getElementById('yearSpan').textContent = spanYears;
+        document.getElementById('mechanismCount').textContent = mechanisms.length;
+    });
+    </script>
+</body>
+</html>
